@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>God of War - Niebla de Guerra</title>
+    <style>
+        :root {
+            --bg-color: #050505; /* Más oscuro */
+            --text-color: #d1d1d1;
+            --accent-color: #4a6fa5; /* Azul más apagado/nórdico */
+            --danger-color: #8b0000; 
+            --tile-correct: #3e6b39;
+            --tile-present: #a89f35;
+            --tile-absent: #222;
+            --key-bg: #555;
+            --border-color: #333;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Times New Roman', serif; /* Fuente más clásica/rúnica */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            height: 100vh;
+            margin: 0;
+            padding: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* --- PANTALLA DE INICIO --- */
+        #start-screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #000;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+        }
+
+        #start-screen h1 {
+            font-size: 2rem;
+            color: var(--accent-color);
+            margin-bottom: 20px;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+        }
+
+        #start-btn {
+            background: transparent;
+            border: 1px solid var(--accent-color);
+            color: var(--accent-color);
+            padding: 15px 50px;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        #start-btn:hover {
+            background: var(--accent-color);
+            color: #fff;
+            box-shadow: 0 0 30px rgba(74, 111, 165, 0.4);
+        }
+
+        /* --- JUEGO PRINCIPAL --- */
+        #game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            height: 100%;
+            width: 100%;
+            opacity: 0.2;
+            pointer-events: none;
+            transition: opacity 1.5s ease;
+        }
+
+        header {
+            text-align: center;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        /* BARRA DE TIEMPO */
+        #progress-container {
+            width: 100%;
+            max-width: 500px;
+            height: 4px; /* Más fina */
+            background-color: #111;
+            margin-top: 5px;
+            margin-bottom: 5px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #progress-fill {
+            height: 100%;
+            width: 0%; 
+            background-color: var(--accent-color);
+            transition: width 0.1s linear;
+            box-shadow: 0 0 15px var(--accent-color);
+        }
+
+        #story-wrapper {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 10px;
+        }
+
+        #phase-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.6rem;
+            color: #555;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        #story-box {
+            background-color: #0a0a0a;
+            border: 1px solid #222;
+            padding: 15px 20px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            color: #aaa;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            transition: all 0.5s ease;
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.8);
+        }
+
+        /* TABLERO */
+        #board-container {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            width: 100%;
+            overflow-y: auto;
+            margin-bottom: 10px;
+        }
+
+        #board {
+            display: grid;
+            grid-template-rows: repeat(5, 1fr);
+            gap: 4px;
+            padding: 5px;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: repeat(14, 1fr); 
+            gap: 2px;
+        }
+
+        .tile {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            border: 1px solid var(--border-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.8rem;
+            font-weight: normal;
+            text-transform: uppercase;
+            user-select: none;
+            background-color: rgba(255,255,255,0.02);
+            color: #fff;
+        }
+
+        .tile.space-tile { border: none; background: transparent; }
+
+        @media (max-width: 400px) {
+            .tile { font-size: 0.6rem; }
+        }
+
+        .tile[data-state="active"] { border-color: #666; background-color: rgba(255,255,255,0.05); }
+        .tile[data-state="correct"] { background-color: var(--tile-correct); border-color: var(--tile-correct); }
+        .tile[data-state="present"] { background-color: var(--tile-present); border-color: var(--tile-present); }
+        .tile[data-state="absent"] { background-color: var(--tile-absent); border-color: var(--tile-absent); opacity: 0.5; }
+
+        /* TECLADO */
+        #keyboard {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            padding-bottom: 15px;
+        }
+
+        .key-row {
+            display: flex;
+            justify-content: center;
+            gap: 3px;
+        }
+
+        .key {
+            font-family: sans-serif;
+            background-color: var(--key-bg);
+            color: #ddd;
+            border: none;
+            border-radius: 2px;
+            padding: 0;
+            height: 40px;
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            text-transform: uppercase;
+            user-select: none;
+            font-size: 0.9rem;
+            touch-action: manipulation;
+        }
+
+        .key#enter { flex: 1.5; font-size: 0.7rem; background-color: #2c3e50; }
+        .key#backspace { flex: 1.5; font-size: 1rem; background-color: #2c3e50; }
+
+        #message-container {
+            position: absolute;
+            top: 30%; left: 50%; transform: translateX(-50%);
+            background-color: #111;
+            color: #fff;
+            padding: 15px 30px;
+            border: 1px solid var(--accent-color);
+            font-weight: normal;
+            letter-spacing: 1px;
+            display: none;
+            z-index: 2000;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(0,0,0,0.9);
+            width: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <audio id="bg-music" loop>
+        <source src="music.mp3" type="audio/mpeg">
+    </audio>
+
+    <div id="start-screen">
+        <h1>Sobrevive</h1>
+        <p style="color: #666; margin-bottom: 30px; font-size: 0.8rem; max-width: 300px;">
+            El tiempo corre.<br>Las pistas están en la sangre y el frío.<br>Adivina tu arma.
+        </p>
+        <button id="start-btn">Iniciar Combate</button>
+    </div>
+
+    <div id="message-container"></div>
+
+    <div id="game-container">
+        <header>
+        </header>
+
+        <div id="progress-container">
+            <div id="progress-fill"></div>
+        </div>
+
+        <div id="story-wrapper">
+            <div id="phase-label">
+                <span id="phase-text">Estado: Amenaza</span>
+                <span id="time-left">60s</span>
+            </div>
+            <div id="story-box">
+                </div>
+        </div>
+
+        <div id="board-container">
+            <div id="board"></div>
+        </div>
+
+        <div id="keyboard">
+            <div class="key-row">
+                <button class="key" data-key="Q">Q</button>
+                <button class="key" data-key="W">W</button>
+                <button class="key" data-key="E">E</button>
+                <button class="key" data-key="R">R</button>
+                <button class="key" data-key="T">T</button>
+                <button class="key" data-key="Y">Y</button>
+                <button class="key" data-key="U">U</button>
+                <button class="key" data-key="I">I</button>
+                <button class="key" data-key="O">O</button>
+                <button class="key" data-key="P">P</button>
+            </div>
+            <div class="key-row">
+                <button class="key" data-key="A">A</button>
+                <button class="key" data-key="S">S</button>
+                <button class="key" data-key="D">D</button>
+                <button class="key" data-key="F">F</button>
+                <button class="key" data-key="G">G</button>
+                <button class="key" data-key="H">H</button>
+                <button class="key" data-key="J">J</button>
+                <button class="key" data-key="K">K</button>
+                <button class="key" data-key="L">L</button>
+                <button class="key" data-key="Ñ">Ñ</button>
+            </div>
+            <div class="key-row">
+                <button class="key" id="enter" data-key="ENTER">GOLPEAR</button>
+                <button class="key" data-key="Z">Z</button>
+                <button class="key" data-key="X">X</button>
+                <button class="key" data-key="C">C</button>
+                <button class="key" data-key="V">V</button>
+                <button class="key" data-key="B">B</button>
+                <button class="key" data-key="N">N</button>
+                <button class="key" data-key="M">M</button>
+                <button class="key" id="backspace" data-key="BACKSPACE">⌫</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURACIÓN ---
+        const SOLUTION = "HACHA LEVIATAN";
+        const MAX_GUESSES = 5; 
+        const TOTAL_TIME_MS = 60000; // 60 segundos
+        
+        // --- NARRATIVA CRÍPTICA (Sin spoilers obvios) ---
+        const narratives = [
+            { pct: 0, text: "Te rodean. Sus alientos apestan a carne podrida. No buscas el caos del fuego; buscas el peso silencioso que descansa en tu espalda.", title: "AMENAZA" },
+            
+            { pct: 20, text: "Un estruendo seco a la distancia. Uno de los enemigos cae hacia atrás con el cráneo partido, pero tu mano ahora está vacía.", title: "SEPARACIÓN" },
+            
+            { pct: 40, text: "Luchas con los puños desnudos, ganando tiempo. Sientes una vibración en el aire, un silbido violento que busca su origen.", title: "VACÍO" },
+            
+            { pct: 60, text: "Atrapas el mango al vuelo. La temperatura cae en picada. La sangre en el suelo deja de fluir, cristalizada por un invierno repentino.", title: "ENTROPÍA" },
+            
+            { pct: 80, text: "¡EL TROLL RUGE! No hay esquiva posible. Solo un golpe descendente con el peso de una promesa rota. Hielo contra hueso.", title: "IMPACTO FINAL" }
+        ];
+
+        let currentRow = 0;
+        let currentTile = 0;
+        let isGameOver = false;
+        
+        let startTime = null;
+        let timerInterval = null;
+        let currentNarrativeIndex = -1;
+
+        const rows = []; 
+        const board = document.getElementById('board');
+        const solutionArray = SOLUTION.split('');
+
+        // --- INICIO ---
+        const startBtn = document.getElementById('start-btn');
+        const startScreen = document.getElementById('start-screen');
+        const gameContainer = document.getElementById('game-container');
+        const bgMusic = document.getElementById('bg-music');
+
+        startBtn.addEventListener('click', () => {
+            bgMusic.volume = 0.4;
+            bgMusic.play().catch(e => console.log("Error de audio:", e));
+            
+            startScreen.style.opacity = 0;
+            setTimeout(() => {
+                startScreen.style.display = 'none';
+                gameContainer.style.opacity = 1;
+                gameContainer.style.pointerEvents = 'auto';
+                startTimer(); 
+            }, 800);
+        });
+
+        // --- LOOP DE TIEMPO ---
+        function startTimer() {
+            startTime = Date.now();
+            updateGameLoop();
+            timerInterval = setInterval(updateGameLoop, 100);
+        }
+
+        function updateGameLoop() {
+            if (isGameOver) {
+                clearInterval(timerInterval);
+                return;
+            }
+
+            const elapsed = Date.now() - startTime;
+            const percentage = Math.min((elapsed / TOTAL_TIME_MS) * 100, 100);
+            const timeLeftSec = Math.ceil((TOTAL_TIME_MS - elapsed) / 1000);
+
+            // UI minimalista
+            const bar = document.getElementById('progress-fill');
+            bar.style.width = percentage + "%";
+            document.getElementById('time-left').textContent = timeLeftSec < 10 ? "0" + timeLeftSec : timeLeftSec;
+
+            // Peligro
+            if (percentage > 80) {
+                bar.style.backgroundColor = 'var(--danger-color)';
+                document.getElementById('time-left').style.color = 'var(--danger-color)';
+                document.getElementById('story-box').style.borderColor = 'var(--danger-color)';
+            }
+
+            updateNarrativeText(percentage);
+
+            if (elapsed >= TOTAL_TIME_MS) {
+                triggerLoss();
+            }
+        }
+
+        function updateNarrativeText(percentage) {
+            let newIndex = 0;
+            for (let i = narratives.length - 1; i >= 0; i--) {
+                if (percentage >= narratives[i].pct) {
+                    newIndex = i;
+                    break;
+                }
+            }
+
+            if (newIndex !== currentNarrativeIndex) {
+                currentNarrativeIndex = newIndex;
+                const storyBox = document.getElementById('story-box');
+                const phaseText = document.getElementById('phase-text');
+                
+                storyBox.style.opacity = 0; // Fade out
+                setTimeout(() => {
+                    storyBox.innerHTML = narratives[newIndex].text;
+                    phaseText.textContent = "ESTADO: " + narratives[newIndex].title;
+                    storyBox.style.opacity = 1; // Fade in
+                }, 200);
+            }
+        }
+
+        function triggerLoss() {
+            isGameOver = true;
+            showMessage("FRACASO");
+            document.getElementById('story-box').style.color = "#d1d1d1";
+            document.getElementById('story-box').style.borderColor = "#333";
+            document.getElementById('story-box').innerText = "La oscuridad te reclama.\nEra: HACHA LEVIATAN.";
+            document.getElementById('game-container').style.opacity = 0.3;
+        }
+
+        // --- TABLERO Y JUEGO ---
+        function initBoard() {
+            board.innerHTML = '';
+            for (let i = 0; i < MAX_GUESSES; i++) {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'row';
+                const rowTiles = [];
+                for (let j = 0; j < solutionArray.length; j++) {
+                    const tile = document.createElement('div');
+                    tile.className = 'tile';
+                    if (solutionArray[j] === ' ') {
+                        tile.classList.add('space-tile');
+                        tile.dataset.isSpace = "true";
+                    } else {
+                        tile.dataset.state = "empty";
+                    }
+                    rowDiv.appendChild(tile);
+                    rowTiles.push(tile);
+                }
+                board.appendChild(rowDiv);
+                rows.push(rowTiles);
+            }
+        }
+        initBoard();
+
+        document.addEventListener('keydown', (e) => {
+            if (isGameOver) return;
+            const key = e.key.toUpperCase();
+            if (key === 'ENTER') submitGuess();
+            else if (key === 'BACKSPACE') deleteLetter();
+            else if (/^[A-ZÑ]$/.test(key)) addLetter(key);
+        });
+
+        const keys = document.querySelectorAll('.key');
+        keys.forEach(k => {
+            k.addEventListener('click', (e) => {
+                if (isGameOver) return;
+                const key = e.target.dataset.key;
+                if (key === 'ENTER') submitGuess();
+                else if (key === 'BACKSPACE') deleteLetter();
+                else addLetter(key);
+            });
+        });
+
+        function addLetter(letter) {
+            let activeTiles = rows[currentRow].filter(t => t.dataset.isSpace !== "true");
+            if (currentTile < activeTiles.length) {
+                let domIndex = 0;
+                let validCount = 0;
+                while(domIndex < rows[currentRow].length) {
+                    if(rows[currentRow][domIndex].dataset.isSpace !== "true") {
+                        if (validCount === currentTile) break;
+                        validCount++;
+                    }
+                    domIndex++;
+                }
+                const tile = rows[currentRow][domIndex];
+                tile.textContent = letter;
+                tile.dataset.state = "active";
+                tile.style.borderColor = "#666";
+                currentTile++;
+            }
+        }
+
+        function deleteLetter() {
+            if (currentTile > 0) {
+                currentTile--;
+                let domIndex = 0;
+                let validCount = 0;
+                while(domIndex < rows[currentRow].length) {
+                    if(rows[currentRow][domIndex].dataset.isSpace !== "true") {
+                        if (validCount === currentTile) break;
+                        validCount++;
+                    }
+                    domIndex++;
+                }
+                const tile = rows[currentRow][domIndex];
+                tile.textContent = '';
+                tile.dataset.state = "empty";
+                tile.style.borderColor = "var(--border-color)";
+            }
+        }
+
+        function submitGuess() {
+            const lettersInSolution = SOLUTION.replace(/ /g, '').length;
+            if (currentTile !== lettersInSolution) {
+                showMessage("INCOMPLETO");
+                return;
+            }
+            let guessString = "";
+            const currentRowTiles = rows[currentRow];
+            currentRowTiles.forEach(tile => {
+                if(tile.dataset.isSpace === "true") guessString += " ";
+                else guessString += tile.textContent;
+            });
+            checkWinCondition(guessString, currentRowTiles);
+        }
+
+        function checkWinCondition(guess, tiles) {
+            const solutionChars = SOLUTION.split('');
+            const guessChars = guess.split('');
+            let letterCounts = {};
+            solutionChars.forEach(char => {
+                if(char !== ' ') letterCounts[char] = (letterCounts[char] || 0) + 1;
+            });
+            const states = new Array(guessChars.length).fill('absent');
+
+            guessChars.forEach((char, i) => {
+                if (char === ' ') { states[i] = 'space'; return; }
+                if (char === solutionChars[i]) {
+                    states[i] = 'correct';
+                    letterCounts[char]--;
+                }
+            });
+
+            guessChars.forEach((char, i) => {
+                if (char === ' ' || states[i] === 'correct') return;
+                if (letterCounts[char] > 0) {
+                    states[i] = 'present';
+                    letterCounts[char]--;
+                }
+            });
+
+            tiles.forEach((tile, i) => {
+                if(tile.dataset.isSpace === "true") return;
+                tile.dataset.state = states[i];
+                const keyBtn = document.querySelector(`.key[data-key="${guessChars[i]}"]`);
+                if (keyBtn) {
+                    if (states[i] === 'correct') keyBtn.style.backgroundColor = "var(--tile-correct)";
+                    else if (states[i] === 'present' && keyBtn.style.backgroundColor !== "var(--tile-correct)") keyBtn.style.backgroundColor = "var(--tile-present)";
+                    else if (states[i] === 'absent' && keyBtn.style.backgroundColor !== "var(--tile-correct)" && keyBtn.style.backgroundColor !== "var(--tile-present)") keyBtn.style.backgroundColor = "var(--tile-absent)";
+                }
+            });
+
+            if (guess === SOLUTION) {
+                isGameOver = true;
+                clearInterval(timerInterval);
+                showMessage("VICTORIA");
+                
+                document.getElementById('story-box').style.borderColor = "var(--tile-correct)";
+                document.getElementById('story-box').style.color = "#fff";
+                document.getElementById('story-box').innerHTML = "La niebla se disipa.<br>El arma reposa en tu mano.";
+                
+                document.getElementById('progress-fill').style.width = '100%';
+                document.getElementById('progress-fill').style.backgroundColor = 'var(--tile-correct)';
+            } else {
+                currentRow++;
+                currentTile = 0;
+                if (currentRow >= MAX_GUESSES) {
+                    isGameOver = true;
+                    clearInterval(timerInterval);
+                    showMessage("AGOTADO");
+                    document.getElementById('story-box').innerText = "Te quedaste sin fuerzas.\nEra: HACHA LEVIATAN.";
+                }
+            }
+        }
+
+        function showMessage(msg) {
+            const container = document.getElementById('message-container');
+            container.textContent = msg;
+            container.style.display = 'block';
+            setTimeout(() => { container.style.display = 'none'; }, 2000);
+        }
+    </script>
+</body>
+</html>
