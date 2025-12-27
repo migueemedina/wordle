@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>God of War - Niebla de Guerra</title>
+    <title>God of War - Wordle</title>
     <style>
         :root {
             --bg-color: #050505;
@@ -14,7 +14,7 @@
             --tile-present: #a89f35;
             --tile-absent: #222;
             --key-bg: #555;
-            --border-color: #333;
+            --border-color: #444; /* Borde un poco más claro para visibilidad */
         }
 
         * { box-sizing: border-box; }
@@ -26,11 +26,10 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center; /* Centrado */
-            /* CAMBIO CLAVE: dvh se adapta a las barras del navegador móvil */
-            height: 100dvh; 
+            justify-content: center;
+            height: 100dvh; /* Altura dinámica real para móviles */
             margin: 0;
-            padding: 0; /* Quitamos padding del body para tener control total */
+            padding: 0;
             overflow: hidden;
             position: relative;
         }
@@ -53,28 +52,27 @@
         #start-btn { background: transparent; border: 1px solid var(--accent-color); color: var(--accent-color); padding: 15px 50px; font-size: 1rem; text-transform: uppercase; letter-spacing: 3px; cursor: pointer; transition: all 0.3s; }
         #start-btn:hover { background: var(--accent-color); color: #fff; box-shadow: 0 0 30px rgba(74, 111, 165, 0.4); }
 
-        /* --- CONTENEDOR PRINCIPAL FLEXIBLE --- */
+        /* --- CONTENEDOR PRINCIPAL --- */
         #game-container {
             display: flex;
             flex-direction: column;
             align-items: center;
-            /* Usamos todo el alto disponible */
             height: 100%; 
             width: 100%;
-            max-width: 500px; /* Limitamos ancho en PC */
-            padding: 10px;    /* Padding interno seguro */
+            max-width: 600px; /* Un poco más ancho para las 14 letras */
+            padding: 5px;
             opacity: 0.2;
             pointer-events: none;
             transition: opacity 1.5s ease;
         }
 
         /* HEADER y BARRA */
-        header { width: 100%; margin-bottom: 5px; flex-shrink: 0; } /* No encoger */
+        header { width: 100%; margin-bottom: 2px; flex-shrink: 0; }
         
         #progress-container {
             width: 100%; height: 4px; background-color: #111;
             margin: 5px 0; overflow: hidden; position: relative;
-            flex-shrink: 0; /* No encoger */
+            flex-shrink: 0; 
         }
         #progress-fill { height: 100%; width: 0%; background-color: var(--accent-color); transition: width 0.1s linear; box-shadow: 0 0 15px var(--accent-color); }
 
@@ -83,65 +81,71 @@
             width: 100%;
             display: flex;
             flex-direction: column;
-            margin-bottom: 10px;
-            flex-shrink: 0; /* Importante: que la historia no desaparezca */
+            margin-bottom: 5px;
+            flex-shrink: 0; 
         }
 
         #phase-label { display: flex; justify-content: space-between; font-size: 0.6rem; color: #555; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 2px; }
         
         #story-box {
-            background-color: #0a0a0a; border: 1px solid #222; padding: 10px 15px;
-            font-size: 0.9rem; line-height: 1.4; color: #aaa;
-            min-height: 80px; /* Un poco más chico para dar espacio */
+            background-color: #0a0a0a; border: 1px solid #222; padding: 10px;
+            font-size: 0.85rem; line-height: 1.3; color: #aaa;
+            min-height: 70px;
             display: flex; align-items: center; justify-content: center; text-align: center;
             transition: all 0.5s ease; box-shadow: inset 0 0 50px rgba(0,0,0,0.8);
         }
 
-        /* TABLERO (Este es el que debe ser flexible) */
+        /* --- ARREGLO DEL TABLERO --- */
         #board-container {
-            flex-grow: 1; /* Ocupa todo el espacio sobrante */
-            min-height: 0; /* Permite que Flexbox lo encoja si falta espacio */
+            flex-grow: 1; /* Ocupa el espacio disponible */
+            min-height: 0; /* Permite encogerse si hace falta */
             display: flex;
             justify-content: center;
-            align-items: center; /* Centrar verticalmente */
+            align-items: center; 
             width: 100%;
-            margin-bottom: 5px;
-            overflow: hidden; /* Evitar scroll si es posible, mejor que se encojan las fichas */
+            padding: 5px 0;
         }
 
         #board {
             display: grid;
             grid-template-rows: repeat(5, 1fr);
-            gap: 4px;
-            padding: 2px;
-            /* Truco: Aspect ratio máximo para que no se estire demasiado en vertical */
+            gap: 3px;
+            /* Aquí está la magia: */
+            width: 100%; 
+            max-width: 100%;
+            /* Forzamos a que mantenga la proporción 14 ancho x 5 alto */
+            /* Esto evita que se estire verticalmente de forma rara */
+            aspect-ratio: 14 / 5; 
             max-height: 100%;
-            aspect-ratio: 4/5; 
         }
 
-        .row { display: grid; grid-template-columns: repeat(14, 1fr); gap: 2px; }
+        .row { display: grid; grid-template-columns: repeat(14, 1fr); gap: 3px; }
         
         .tile {
-            width: 100%; aspect-ratio: 1 / 1; border: 1px solid var(--border-color);
+            width: 100%; 
+            aspect-ratio: 1 / 1; /* Cuadrados perfectos */
+            border: 1px solid var(--border-color);
             display: flex; justify-content: center; align-items: center;
-            font-size: 0.8rem; background-color: rgba(255,255,255,0.02); color: #fff;
+            font-size: 0.75rem; /* Letra ajustada */
+            background-color: rgba(255,255,255,0.05); /* Fondo sutil para que se vea */
+            color: #fff;
         }
         .tile.space-tile { border: none; background: transparent; }
         
-        .tile[data-state="active"] { border-color: #666; background-color: rgba(255,255,255,0.05); }
+        /* ESTADOS DE COLORES */
+        .tile[data-state="active"] { border-color: #999; background-color: rgba(255,255,255,0.1); }
         .tile[data-state="correct"] { background-color: var(--tile-correct); border-color: var(--tile-correct); }
         .tile[data-state="present"] { background-color: var(--tile-present); border-color: var(--tile-present); }
-        .tile[data-state="absent"] { background-color: var(--tile-absent); border-color: var(--tile-absent); opacity: 0.5; }
+        .tile[data-state="absent"] { background-color: var(--tile-absent); border-color: var(--tile-absent); opacity: 0.6; }
 
-        /* TECLADO - FIJO AL FONDO */
+        /* TECLADO */
         #keyboard {
             width: 100%;
             display: flex;
             flex-direction: column;
             gap: 4px;
-            /* Padding extra abajo para iPhones modernos (barra home) */
             padding-bottom: max(10px, env(safe-area-inset-bottom)); 
-            flex-shrink: 0; /* PROHIBIDO ENCOGER EL TECLADO */
+            flex-shrink: 0; 
         }
 
         .key-row { display: flex; justify-content: center; gap: 2px; }
@@ -149,26 +153,25 @@
         .key {
             font-family: sans-serif; background-color: var(--key-bg); color: #ddd;
             border: none; border-radius: 2px; padding: 0;
-            height: 42px; /* Altura fija cómoda */
+            height: 45px; /* Teclas cómodas */
             flex: 1; display: flex; justify-content: center; align-items: center;
             cursor: pointer; text-transform: uppercase; user-select: none;
             font-size: 0.9rem; touch-action: manipulation;
         }
-        .key#enter, .key#backspace { flex: 1.5; background-color: #2c3e50; }
+        .key#enter, .key#backspace { flex: 1.5; background-color: #2c3e50; font-size: 0.75rem; font-weight: bold;}
 
         #message-container {
-            position: absolute; top: 30%; left: 50%; transform: translateX(-50%);
+            position: absolute; top: 40%; left: 50%; transform: translateX(-50%);
             background-color: #111; color: #fff; padding: 15px 30px;
             border: 1px solid var(--accent-color); display: none; z-index: 2000;
             text-align: center; box-shadow: 0 0 30px rgba(0,0,0,0.9); width: max-content;
         }
 
-        /* MEDIA QUERY PARA PANTALLAS MUY BAJAS (Mobile Horizontal o iPhone SE) */
-        @media (max-height: 650px) {
-            #story-box { min-height: 50px; font-size: 0.8rem; padding: 5px; }
-            .key { height: 35px; }
-            #board { gap: 2px; }
-            #start-screen h1 { font-size: 1.5rem; }
+        /* Ajustes para pantallas muy pequeñas */
+        @media (max-width: 380px) {
+            .tile { font-size: 0.6rem; border-width: 0.5px; }
+            #board { gap: 1px; }
+            .row { gap: 1px; }
         }
     </style>
 </head>
@@ -189,8 +192,7 @@
     <div id="message-container"></div>
 
     <div id="game-container">
-        <header>
-        </header>
+        <header></header>
 
         <div id="progress-container">
             <div id="progress-fill"></div>
@@ -201,8 +203,7 @@
                 <span id="phase-text">Estado: Amenaza</span>
                 <span id="time-left">60s</span>
             </div>
-            <div id="story-box">
-                </div>
+            <div id="story-box"></div>
         </div>
 
         <div id="board-container">
@@ -235,7 +236,7 @@
                 <button class="key" data-key="Ñ">Ñ</button>
             </div>
             <div class="key-row">
-                <button class="key" id="enter" data-key="ENTER">GOLPEAR</button>
+                <button class="key" id="enter" data-key="ENTER">ENVIAR</button>
                 <button class="key" data-key="Z">Z</button>
                 <button class="key" data-key="X">X</button>
                 <button class="key" data-key="C">C</button>
@@ -252,18 +253,13 @@
         // --- CONFIGURACIÓN ---
         const SOLUTION = "HACHA LEVIATAN";
         const MAX_GUESSES = 5; 
-        const TOTAL_TIME_MS = 60000; // 60 segundos
+        const TOTAL_TIME_MS = 60000; 
         
-        // --- NARRATIVA CRÍPTICA (Sin spoilers obvios) ---
         const narratives = [
             { pct: 0, text: "Te rodean. Sus alientos apestan a carne podrida. No buscas el caos del fuego; buscas el peso silencioso que descansa en tu espalda.", title: "AMENAZA" },
-            
             { pct: 20, text: "Un estruendo seco a la distancia. Uno de los enemigos cae hacia atrás con el cráneo partido, pero tu mano ahora está vacía.", title: "SEPARACIÓN" },
-            
             { pct: 40, text: "Luchas con los puños desnudos, ganando tiempo. Sientes una vibración en el aire, un silbido violento que busca su origen.", title: "VACÍO" },
-            
             { pct: 60, text: "Atrapas el mango al vuelo. La temperatura cae en picada. La sangre en el suelo deja de fluir, cristalizada por un invierno repentino.", title: "ENTROPÍA" },
-            
             { pct: 80, text: "¡EL TROLL RUGE! No hay esquiva posible. Solo un golpe descendente con el peso de una promesa rota. Hielo contra hueso.", title: "IMPACTO FINAL" }
         ];
 
@@ -315,12 +311,10 @@
             const percentage = Math.min((elapsed / TOTAL_TIME_MS) * 100, 100);
             const timeLeftSec = Math.ceil((TOTAL_TIME_MS - elapsed) / 1000);
 
-            // UI minimalista
             const bar = document.getElementById('progress-fill');
             bar.style.width = percentage + "%";
             document.getElementById('time-left').textContent = timeLeftSec < 10 ? "0" + timeLeftSec : timeLeftSec;
 
-            // Peligro
             if (percentage > 80) {
                 bar.style.backgroundColor = 'var(--danger-color)';
                 document.getElementById('time-left').style.color = 'var(--danger-color)';
@@ -348,11 +342,11 @@
                 const storyBox = document.getElementById('story-box');
                 const phaseText = document.getElementById('phase-text');
                 
-                storyBox.style.opacity = 0; // Fade out
+                storyBox.style.opacity = 0; 
                 setTimeout(() => {
                     storyBox.innerHTML = narratives[newIndex].text;
                     phaseText.textContent = "ESTADO: " + narratives[newIndex].title;
-                    storyBox.style.opacity = 1; // Fade in
+                    storyBox.style.opacity = 1; 
                 }, 200);
             }
         }
@@ -531,5 +525,4 @@
         }
     </script>
 </body>
-
 </html>
